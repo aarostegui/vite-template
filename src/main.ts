@@ -4,7 +4,7 @@ import * as THREE from "three";
 import { loadRoomCapture } from "./lib/loadRoomCapture";
 
 @registerType
-export class Rotate extends Behaviour {
+export class MyMesh extends Behaviour {
     start() {
         console.log(this);
         showBalloonMessage("Hello Cube");
@@ -13,6 +13,9 @@ export class Rotate extends Behaviour {
         // this.gameObject.rotateY(this.context.time.deltaTime);
         // console.log('update')
         // this.gameObject.updateMatrix();
+    }
+    onEnable(): void {
+        console.log('onEnable')
     }
 }
 
@@ -49,9 +52,7 @@ NeedleEngine.addContextCreatedCallback(args =>{
                 console.log('moving window')
                 mesh.translateZ(0.001);
             }
-            mesh.addEventListener(InputEvents.PointerDown, () => {
-                console.log('click');
-            });
+            mesh.beh
             scene.add(mesh);
         });
         // const grid = new GridHelper();
