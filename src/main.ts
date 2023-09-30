@@ -52,7 +52,7 @@ NeedleEngine.addContextCreatedCallback(args =>{
                 console.log('moving window')
                 mesh.translateZ(0.001);
             }
-            mesh.beh
+
             scene.add(mesh);
         });
         // const grid = new GridHelper();
