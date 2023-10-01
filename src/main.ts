@@ -3,21 +3,28 @@ import { AxesHelper, GridHelper } from "three";
 import * as THREE from "three";
 import { loadRoomCapture } from "./lib/loadRoomCapture";
 
-@registerType
-export class MyMesh extends Behaviour {
-    start() {
-        console.log(this);
-        showBalloonMessage("Hello Cube");
-    }
-    update(): void {
-        // this.gameObject.rotateY(this.context.time.deltaTime);
-        // console.log('update')
-        // this.gameObject.updateMatrix();
-    }
-    onEnable(): void {
-        console.log('onEnable')
-    }
-}
+// @registerType
+// export class MyMesh extends Behaviour {
+//     start() {
+//         console.log(this);
+//         showBalloonMessage("Hello Cube");
+//     }
+//     update(): void {
+//         // this.gameObject.rotateY(this.context.time.deltaTime);
+//         // console.log('update')
+//         // this.gameObject.updateMatrix();
+//     }
+    
+//     onEnable(): void {
+//         console.log('onEnable');
+        
+//         this.context.input.addEventListener(InputEvents.PointerDown, (e) => {
+//             console.log(e)
+//             // this.gameObject.getComponent(THREE.Mesh)?.material?.color.set(0xff0000);
+    
+//         });
+//     }
+// }
 
 NeedleEngine.addContextCreatedCallback(args =>{
     const context = args.context;
@@ -30,6 +37,9 @@ NeedleEngine.addContextCreatedCallback(args =>{
             let mat: THREE.MeshStandardMaterial | null = null;
             if (meshData.name.indexOf('Door') >= 0) {
                 const texture = new THREE.TextureLoader().load("assets/door2.jpg");
+                // flip horizontally
+                texture.wrapS = THREE.RepeatWrapping;
+                texture.repeat.x = - 1;
                 mat = new THREE.MeshStandardMaterial( {map: texture} );
             } else if (meshData.name.indexOf('Window') >= 0) {
                 const texture = new THREE.TextureLoader().load("assets/window.jpg");
@@ -37,6 +47,16 @@ NeedleEngine.addContextCreatedCallback(args =>{
             } else if (meshData.name.indexOf('Storage') >= 0) {
                 geom = new THREE.BoxGeometry( meshData.scale[0], meshData.scale[1] ); 
                 const texture = new THREE.TextureLoader().load("assets/storage.jpg");
+                mat = new THREE.MeshStandardMaterial( {map: texture} );
+            } else if (meshData.name.indexOf('Walls/Wall') >= 0) {
+                geom = new THREE.PlaneGeometry( meshData.scale[0], meshData.scale[1] ); 
+                const texture = new THREE.TextureLoader().load("assets/wall.jpg");
+                const rx = 5 * meshData.scale[0];
+                const ry = 5 * meshData.scale[1];
+                console.log('rx, ry', rx, ry);
+
+                texture.repeat.set( rx, ry);
+                // texture.
                 mat = new THREE.MeshStandardMaterial( {map: texture} );
             } else {
                 mat = new THREE.MeshStandardMaterial( { color: 0xcccccc } );
@@ -52,8 +72,19 @@ NeedleEngine.addContextCreatedCallback(args =>{
                 console.log('moving window')
                 mesh.translateZ(0.001);
             }
-
+            // const childGeom = new THREE.PlaneGeometry( 0.5, 0.5 );
+            // const childMat = new THREE.MeshStandardMaterial( { color: 0x0000ff } );
+            // const childMesh = new THREE.Mesh(childGeom, childMat); 
+            // childMesh.translateZ(0.01);
+            // mesh.add(childMesh)
+            // const dragControls = GameObject.addNewComponent(mesh, DragControls);
+            // dragControls.showGizmo = false;
+            // dragControls.useViewAngle = false;
+            mesh.name = meshData.name;
+            console.log('===> name', mesh.name);
             scene.add(mesh);
+
+            // GameObject.addComponent(mesh, new MyMesh());
         });
         // const grid = new GridHelper();
         // scene.add(grid);
@@ -63,6 +94,45 @@ NeedleEngine.addContextCreatedCallback(args =>{
         const light = new THREE.AmbientLight(0xffffff, 1); // soft white light
         scene.add( light );
     
+    });
+    const raycaster = new THREE.Raycaster();
+    const clickMouse = new THREE.Vector2();
+    let previousObject = null;
+
+    window.addEventListener('click', (e) => {
+        clickMouse.x = ( e.clientX / window.innerWidth ) * 2 - 1;
+        clickMouse.y = - ( e.clientY / window.innerHeight ) * 2 + 1;
+        raycaster.setFromCamera( clickMouse, context.mainCamera! );
+        const found = raycaster.intersectObjects( scene.children );
+        if (found.length > 0) {
+            if (previousObject) {
+                previousObject.material?.color.set(previousObject._previousColor);
+                delete previousObject._previousColor;
+                previousObject = null;
+            }
+            const { object, point } = found[0];
+            console.log('found uv (coords)', found[0].uv);
+            console.log('object', object);
+            console.log('point', point);
+            previousObject = object;
+            // found.map(({object}) => {
+                console.log('object', object);
+                if (object instanceof THREE.Mesh) {
+                    const map = object.material?.map;
+                    console.log('map', map);
+                    if (object._previousColor) {
+                        object.material?.color.set(object._previousColor);
+                        delete object._previousColor;
+                    } else {
+                        const colorHex = object.material?.color.getHex() || 0;
+                        object._previousColor = colorHex;
+                        object.material?.color.set(colorHex + 0xdddddd);
+                    }
+                }
+            // });
+        }
+        // console.log('found', found);
+        
     });
     // const grid = new GridHelper();
     // scene.add(grid);
